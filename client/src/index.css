@@ -1,16 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-<!doctype html>
-<html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>Frannie Nails</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+
+/* Stili minimi di base (facoltativi) */
+html, body, #root {
+  height: 100%;
+}
+body {
+  margin: 0;
+}
