@@ -10,22 +10,16 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "react": "^18.3.1",
+     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "web-push": "^3.6.0",
-
-    // strumenti di build spostati qui per Render
-    "vite": "^5.0.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "esbuild": "^0.19.12",
-    "tsx": "^4.7.0",
-
-    // se usi Tailwind/PostCSS
-    "postcss": "^8.4.38",
     "autoprefixer": "^10.4.19",
+    "esbuild": "^0.19.12",
+    "postcss": "^8.4.38",
     "tailwindcss": "^3.4.12",
-
-    // opzionale ma utile nel tuo progetto
-    "typescript": "^5.3.3"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
   }
 }
