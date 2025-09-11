@@ -4,11 +4,15 @@ import { setupVite, serveStatic, log } from "./vite";
 import { startReminderService } from "./notifications";
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.get("/", (req, res) => {
+  res.send("FrannieNails API is running ✅");
+});
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // Serve uploaded files
-app.use('/uploads', express.static('public/uploads'));
+app.use("/uploads", express.static("public/uploads"));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -42,38 +46,39 @@ app.use((req, res, next) => {
 
 (async () => {
   registerRoutes(app);
-  
-  const server = await import('http').then(http => http.createServer(app));
+
+  const server = await import("http").then((http) => http.createServer(app));
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    console.error('Server error:', err.message);
+    console.error("Server error:", err.message);
     res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Importantly only setup vite in development
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-    
-    // Start the reminder service after server is running
-    startReminderService();
-  });
+  // Usa la porta di Render o 5000 in locale
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+
+  server.listen(
+    {
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    },
+    () => {
+      log(`✅ serving on port ${port}`);
+
+      // Start the reminder service after server is running
+      startReminderService();
+    }
+  );
 })();
+
