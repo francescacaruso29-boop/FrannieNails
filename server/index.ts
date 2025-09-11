@@ -11,6 +11,7 @@ app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 // serve file caricati
 app.use("/uploads", express.static("public/uploads"));
 
+// logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -40,12 +41,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // API interne
   registerRoutes(app);
+
+  // API push (subscribe + test)
   app.use("/api/push", pushRouter());
 
-
+  // crea server HTTP
   const server = await import("http").then(http => http.createServer(app));
 
+  // error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -53,6 +58,7 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
+  // vite in dev, static in prod
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {

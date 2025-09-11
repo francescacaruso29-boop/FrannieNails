@@ -1,63 +1,76 @@
-import { type Express } from "express";
-import fs from "fs";
-import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
-import { type Server } from "http";
-import viteConfig from "../vite.config";
-import { nanoid } from "nanoid";
+import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "./routes";
+import { pushRouter } from "./push-routes";
+import { setupVite, serveStatic, log } from "./vite";
+import { startReminderService } from "./notifications";
 
-const viteLogger = createLogger();
+const app = express();
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
+// serve file caricati
+app.use("/uploads", express.static("public/uploads"));
 
-export async function setupVite(app: Express, server: Server) {
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    server: { middlewareMode: true, hmr: { server }, allowedHosts: true },
-    appType: "custom",
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
+// logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+      log(logLine);
     }
   });
 
-  app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    try {
-      const clientTemplate = path.resolve(import.meta.dirname, "..", "client", "index.html");
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
-      const page = await vite.transformIndexHtml(req.originalUrl, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
-}
+  next();
+});
 
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "..", "dist/client");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(`❌ Could not find the build directory: ${distPath}`);
+(async () => {
+  // API interne
+  registerRoutes(app);
+
+  // API push (subscribe + test)
+  app.use("/api/push", pushRouter());
+
+  // crea server HTTP
+  const server = await import("http").then(http => http.createServer(app));
+
+  // error handler
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    console.error("Server error:", err.message);
+    res.status(status).json({ message });
+  });
+
+  // vite in dev, static in prod
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
   }
-  app.use(express.static(distPath));
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
-}
+
+  const port = process.env.PORT || 10000;
+  server.listen(
+    { port, host: "0.0.0.0" },
+    () => {
+      log(`✅ serving on port ${port}`);
+      startReminderService();
+    }
+  );
+})();
