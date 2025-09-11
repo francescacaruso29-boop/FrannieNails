@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { pushRouter } from "./push-routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { startReminderService } from "./notifications";
 
@@ -40,6 +41,8 @@ app.use((req, res, next) => {
 
 (async () => {
   registerRoutes(app);
+  app.use("/api/push", pushRouter());
+
 
   const server = await import("http").then(http => http.createServer(app));
 
