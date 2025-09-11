@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" rx="24" fill="#d38a77"/>
+  <circle cx="96" cy="96" r="72" fill="white" opacity="0.1"/>
+  <path d="M96 48L100.36 82.08L144 96L100.36 109.92L96 144L91.64 109.92L48 96L91.64 82.08L96 48Z" fill="white"/>
+  <circle cx="96" cy="96" r="8" fill="#d38a77"/>
+  <text x="96" y="168" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">FRANNIE</text>
+</svg>
